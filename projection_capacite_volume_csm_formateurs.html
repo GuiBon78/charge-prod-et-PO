@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projection capacité volume et économie</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2f;
+      --panel-2: #18223d;
+      --text: #e9eefb;
+      --muted: #a9b4d0;
+      --line: #2d3a61;
+      --good: #16a34a;
+      --warn: #f59e0b;
+      --bad: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #08101d 0%, #0f1730 100%);
+    }
+    .wrap {
+      max-width: 1500px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: rgba(18, 26, 47, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+    }
+    .left {
+      padding: 18px;
+      position: sticky;
+      top: 20px;
+      height: fit-content;
+    }
+    .right {
+      padding: 18px;
+      display: grid;
+      gap: 18px;
+    }
+    h1 { font-size: 24px; margin: 0 0 10px; }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    p.sub {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 14px;
+    }
+    .grid-2, .grid-4 {
+      display: grid;
+      gap: 12px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .metric .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .metric .v {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .metric .s {
+      font-size: 12px;
+      margin-top: 6px;
+      color: var(--muted);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      font-size: 14px;
+      vertical-align: top;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: rgba(255,255,255,0.02);
+    }
+    tr:last-child td { border-bottom: none; }
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .bad { color: var(--bad); }
+    .analysis {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      line-height: 1.55;
+    }
+    .analysis p { margin: 0 0 10px; }
+    .small { color: var(--muted); font-size: 12px; }
+    .debug {
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media (max-width: 1100px) {
+      .wrap { grid-template-columns: 1fr; }
+      .left { position: static; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
+      body { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card left">
+      <h1>Projection capacité volume</h1>
+      <p class="sub">Cette version tient compte des vagues de lancement par 50 apprenants et ajoute la dimension économique : chiffre d'affaires, coûts, marge unitaire, marge par vague et marge totale selon le volume.</p>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="programHours">Durée du parcours (h / apprenant)</label>
+          <input id="programHours" type="number" step="0.1" value="25">
+        </div>
+        <div class="field">
+          <label for="spreadWeeks">Semaines d'étalement du parcours</label>
+          <input id="spreadWeeks" type="number" step="1" value="48">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="csmKickoffHours">CSM semaine 1 (h / apprenant)</label>
+          <input id="csmKickoffHours" type="number" step="0.1" value="1">
+        </div>
+        <div class="field">
+          <label for="csmWeeklyHours">CSM hebdo ensuite (h / apprenant)</label>
+          <input id="csmWeeklyHours" type="number" step="0.01" value="0.03">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="trainerHoursWeek">Temps de travail formateur (h / semaine)</label>
+          <input id="trainerHoursWeek" type="number" step="0.1" value="35">
+        </div>
+        <div class="field">
+          <label for="csmHoursWeek">Temps de travail CSM (h / semaine)</label>
+          <input id="csmHoursWeek" type="number" step="0.1" value="35">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="occupancyRate">Taux de capacité mobilisable (%)</label>
+          <input id="occupancyRate" type="number" step="1" value="85">
+        </div>
+        <div class="field">
+          <label for="waveSize">Taille d'une vague de lancement</label>
+          <input id="waveSize" type="number" step="1" value="50">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="salePricePerHour">Prix de vente (€ HT / h)</label>
+          <input id="salePricePerHour" type="number" step="0.01" value="60">
+        </div>
+        <div class="field">
+          <label for="trainerCostPerHour">Coût formateur (€ / h)</label>
+          <input id="trainerCostPerHour" type="number" step="0.01" value="27">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="introducerRate">Commission apporteur (%)</label>
+          <input id="introducerRate" type="number" step="0.1" value="20">
+        </div>
+        <div class="field">
+          <label for="salesCommissionRate">Commission commerciale (%)</label>
+          <input id="salesCommissionRate" type="number" step="0.1" value="7">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="csmHourlyCostLoaded">Coût CSM chargé (€ / h)</label>
+          <input id="csmHourlyCostLoaded" type="number" step="0.01" value="27.05">
+        </div>
+        <div class="field">
+          <label for="otherCostPerLearner">Autres coûts fixes par apprenant (€)</label>
+          <input id="otherCostPerLearner" type="number" step="0.01" value="0">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="maxLearners">Volume max apprenants</label>
+          <input id="maxLearners" type="number" step="1" value="1500">
+        </div>
+        <div class="field">
+          <label for="stepLearners">Pas du tableau</label>
+          <input id="stepLearners" type="number" step="1" value="50">
+        </div>
+      </div>
+
+      <p class="small">Lecture : la charge formation est lissée sur la durée du parcours. Le CSM est modélisé avec un pic en semaine 1 puis un suivi hebdomadaire moyen. En économie, la commission commerciale est calculée sur le CA net après apporteur.</p>
+      <div id="selfCheck" class="debug">Vérification des composants…</div>
+    </section>
+
+    <section class="card right">
+      <div class="grid-4">
+        <div class="metric">
+          <div class="k">Capacité utile hebdo formateur</div>
+          <div class="v" id="trainerCapacityWeek">-</div>
+          <div class="s">heures utiles / semaine</div>
+        </div>
+        <div class="metric">
+          <div class="k">Capacité utile hebdo CSM</div>
+          <div class="v" id="csmCapacityWeek">-</div>
+          <div class="s">heures utiles / semaine</div>
+        </div>
+        <div class="metric">
+          <div class="k">Seuil 1 formateur plein</div>
+          <div class="v" id="trainerFullThreshold">-</div>
+          <div class="s">apprenants simultanés</div>
+        </div>
+        <div class="metric">
+          <div class="k">Seuil 1 CSM plein</div>
+          <div class="v" id="csmFullThreshold">-</div>
+          <div class="s">base moyenne / semaine</div>
+        </div>
+      </div>
+
+      <div class="grid-4">
+        <div class="metric">
+          <div class="k">CA par apprenant</div>
+          <div class="v" id="revenuePerLearner">-</div>
+          <div class="s">parcours complet</div>
+        </div>
+        <div class="metric">
+          <div class="k">Coût total par apprenant</div>
+          <div class="v" id="costPerLearner">-</div>
+          <div class="s">chargé</div>
+        </div>
+        <div class="metric">
+          <div class="k">Marge par apprenant</div>
+          <div class="v" id="marginPerLearner">-</div>
+          <div class="s" id="marginPerLearnerPct">-</div>
+        </div>
+        <div class="metric">
+          <div class="k">Marge sur 1 vague</div>
+          <div class="v" id="marginPerWave">-</div>
+          <div class="s">taille de vague actuelle</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px;">
+        <h2>Lecture de seuils</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Ressource</th>
+              <th>Capacité utile hebdo</th>
+              <th>Charge hebdo par apprenant</th>
+              <th>Apprenants couverts par 1 ETP</th>
+            </tr>
+          </thead>
+          <tbody id="thresholdTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="padding:16px;">
+        <h2>Projection par volume avec vagues</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Apprenants</th>
+              <th>Nb de vagues</th>
+              <th>Heures formation total</th>
+              <th>Heures CSM total</th>
+              <th>Charge formation / semaine</th>
+              <th>Charge CSM moyenne / semaine</th>
+              <th>Pic CSM semaine 1</th>
+              <th>CA total</th>
+              <th>Coût total</th>
+              <th>Marge totale</th>
+              <th>Marge %</th>
+              <th>Formateurs requis</th>
+              <th>CSM requis (moy.)</th>
+              <th>CSM requis (pic)</th>
+            </tr>
+          </thead>
+          <tbody id="volumeTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="padding:16px;">
+        <h2>Analyse automatique</h2>
+        <div class="analysis" id="analysisBox"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const inputIds = [
+        'programHours', 'spreadWeeks', 'csmKickoffHours', 'csmWeeklyHours',
+        'trainerHoursWeek', 'csmHoursWeek', 'occupancyRate', 'waveSize',
+        'salePricePerHour', 'trainerCostPerHour', 'introducerRate', 'salesCommissionRate',
+        'csmHourlyCostLoaded', 'otherCostPerLearner', 'maxLearners', 'stepLearners'
+      ];
+
+      const outputIds = [
+        'trainerCapacityWeek', 'csmCapacityWeek', 'trainerFullThreshold', 'csmFullThreshold',
+        'revenuePerLearner', 'costPerLearner', 'marginPerLearner', 'marginPerLearnerPct', 'marginPerWave',
+        'thresholdTableBody', 'volumeTableBody', 'analysisBox', 'selfCheck'
+      ];
+
+      const fmtNum = (n, d = 0) => new Intl.NumberFormat('fr-FR', {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d
+      }).format(Number.isFinite(n) ? n : 0);
+
+      function getEl(id) {
+        return document.getElementById(id);
+      }
+
+      function sanitizeNumber(value, fallback = 0, min = 0) {
+        const n = Number.parseFloat(value);
+        if (!Number.isFinite(n)) return fallback;
+        return Math.max(min, n);
+      }
+
+      function compute(v) {
+        const occupancy = v.occupancyRate / 100;
+        const introducerRate = v.introducerRate / 100;
+        const salesCommissionRate = v.salesCommissionRate / 100;
+
+        const trainerCapacityWeek = v.trainerHoursWeek * occupancy;
+        const csmCapacityWeek = v.csmHoursWeek * occupancy;
+        const trainingWeeklyLoadPerLearner = v.spreadWeeks > 0 ? v.programHours / v.spreadWeeks : 0;
+        const csmTotalHoursPerLearner = v.csmKickoffHours + Math.max(v.spreadWeeks - 1, 0) * v.csmWeeklyHours;
+        const csmWeeklyAveragePerLearner = v.spreadWeeks > 0 ? csmTotalHoursPerLearner / v.spreadWeeks : 0;
+        const csmPeakWaveHours = v.waveSize * v.csmKickoffHours;
+
+        const trainerThreshold = trainerCapacityWeek > 0 && trainingWeeklyLoadPerLearner > 0
+          ? trainerCapacityWeek / trainingWeeklyLoadPerLearner
+          : 0;
+        const csmThresholdAvg = csmCapacityWeek > 0 && csmWeeklyAveragePerLearner > 0
+          ? csmCapacityWeek / csmWeeklyAveragePerLearner
+          : 0;
+        const csmThresholdPeakWave = v.csmKickoffHours > 0
+          ? csmCapacityWeek / v.csmKickoffHours
+          : 0;
+
+        const revenuePerLearner = v.salePricePerHour * v.programHours;
+        const introducerCostPerLearner = revenuePerLearner * introducerRate;
+        const netAfterIntroducerPerLearner = revenuePerLearner - introducerCostPerLearner;
+        const salesCommissionCostPerLearner = netAfterIntroducerPerLearner * salesCommissionRate;
+        const trainerCostPerLearner = v.trainerCostPerHour * v.programHours;
+        const csmCostPerLearner = v.csmHourlyCostLoaded * csmTotalHoursPerLearner;
+        const costPerLearner = introducerCostPerLearner + salesCommissionCostPerLearner + trainerCostPerLearner + csmCostPerLearner + v.otherCostPerLearner;
+        const marginPerLearner = revenuePerLearner - costPerLearner;
+        const marginRate = revenuePerLearner > 0 ? marginPerLearner / revenuePerLearner : 0;
+        const marginPerWave = marginPerLearner * v.waveSize;
+
+        return {
+          trainerCapacityWeek,
+          csmCapacityWeek,
+          trainingWeeklyLoadPerLearner,
+          csmTotalHoursPerLearner,
+          csmWeeklyAveragePerLearner,
+          csmPeakWaveHours,
+          trainerThreshold,
+          csmThresholdAvg,
+          csmThresholdPeakWave,
+          revenuePerLearner,
+          costPerLearner,
+          marginPerLearner,
+          marginRate,
+          marginPerWave
+        };
+      }
+
+      function runSelfCheck() {
+        const missingInputs = inputIds.filter(id => !getEl(id));
+        const missingOutputs = outputIds.filter(id => !getEl(id));
+        const selfCheck = getEl('selfCheck');
+        if (!selfCheck) return false;
+
+        if (missingInputs.length || missingOutputs.length) {
+          selfCheck.textContent = `Composants manquants — inputs: ${missingInputs.join(', ') || 'aucun'} ; outputs: ${missingOutputs.join(', ') || 'aucun'}`;
+          selfCheck.className = 'debug bad';
+          return false;
+        }
+
+        const smokeValues = {
+          programHours: 25,
+          spreadWeeks: 48,
+          csmKickoffHours: 1,
+          csmWeeklyHours: 0.03,
+          trainerHoursWeek: 35,
+          csmHoursWeek: 35,
+          occupancyRate: 85,
+          waveSize: 50,
+          salePricePerHour: 60,
+          trainerCostPerHour: 27,
+          introducerRate: 20,
+          salesCommissionRate: 7,
+          csmHourlyCostLoaded: 27.05,
+          otherCostPerLearner: 0,
+          maxLearners: 1500,
+          stepLearners: 50
+        };
+        const smoke = compute(smokeValues);
+        const tests = [
+          { name: 'trainingWeeklyLoadPerLearner > 0', pass: smoke.trainingWeeklyLoadPerLearner > 0 },
+          { name: 'csmTotalHoursPerLearner > csmKickoffHours', pass: smoke.csmTotalHoursPerLearner > smokeValues.csmKickoffHours },
+          { name: 'trainerCapacityWeek > 0', pass: smoke.trainerCapacityWeek > 0 },
+          { name: 'csmThresholdAvg > 0', pass: smoke.csmThresholdAvg > 0 },
+          { name: 'revenuePerLearner > 0', pass: smoke.revenuePerLearner > 0 },
+          { name: 'costPerLearner > 0', pass: smoke.costPerLearner > 0 }
+        ];
+        const failed = tests.filter(t => !t.pass);
+        if (failed.length) {
+          selfCheck.textContent = `Tests internes en échec: ${failed.map(t => t.name).join(', ')}`;
+          selfCheck.className = 'debug bad';
+          return false;
+        }
+
+        selfCheck.textContent = 'Vérification OK — composants trouvés et tests internes passés.';
+        selfCheck.className = 'debug good';
+        return true;
+      }
+
+      function getValues() {
+        return {
+          programHours: sanitizeNumber(getEl('programHours')?.value, 25, 0),
+          spreadWeeks: sanitizeNumber(getEl('spreadWeeks')?.value, 48, 1),
+          csmKickoffHours: sanitizeNumber(getEl('csmKickoffHours')?.value, 1, 0),
+          csmWeeklyHours: sanitizeNumber(getEl('csmWeeklyHours')?.value, 0.03, 0),
+          trainerHoursWeek: sanitizeNumber(getEl('trainerHoursWeek')?.value, 35, 0),
+          csmHoursWeek: sanitizeNumber(getEl('csmHoursWeek')?.value, 35, 0),
+          occupancyRate: sanitizeNumber(getEl('occupancyRate')?.value, 85, 0),
+          waveSize: Math.max(1, Math.round(sanitizeNumber(getEl('waveSize')?.value, 50, 1))),
+          salePricePerHour: sanitizeNumber(getEl('salePricePerHour')?.value, 60, 0),
+          trainerCostPerHour: sanitizeNumber(getEl('trainerCostPerHour')?.value, 27, 0),
+          introducerRate: sanitizeNumber(getEl('introducerRate')?.value, 20, 0),
+          salesCommissionRate: sanitizeNumber(getEl('salesCommissionRate')?.value, 7, 0),
+          csmHourlyCostLoaded: sanitizeNumber(getEl('csmHourlyCostLoaded')?.value, 27.05, 0),
+          otherCostPerLearner: sanitizeNumber(getEl('otherCostPerLearner')?.value, 0, 0),
+          maxLearners: Math.max(1, Math.round(sanitizeNumber(getEl('maxLearners')?.value, 1500, 1))),
+          stepLearners: Math.max(1, Math.round(sanitizeNumber(getEl('stepLearners')?.value, 50, 1)))
+        };
+      }
+
+      function ceil2(n) {
+        return Math.ceil(n * 100) / 100;
+      }
+
+      function renderEconomics(r) {
+        getEl('revenuePerLearner').textContent = `${fmtNum(r.revenuePerLearner, 2)} €`;
+        getEl('costPerLearner').textContent = `${fmtNum(r.costPerLearner, 2)} €`;
+        getEl('marginPerLearner').textContent = `${fmtNum(r.marginPerLearner, 2)} €`;
+        getEl('marginPerLearner').className = `v ${r.marginPerLearner >= 0 ? 'good' : 'bad'}`;
+        getEl('marginPerLearnerPct').textContent = `${fmtNum(r.marginRate * 100, 1)}% de marge`;
+        getEl('marginPerWave').textContent = `${fmtNum(r.marginPerWave, 2)} €`;
+        getEl('marginPerWave').className = `v ${r.marginPerWave >= 0 ? 'good' : 'bad'}`;
+      }
+
+      function renderThresholds(v, r) {
+        getEl('trainerCapacityWeek').textContent = fmtNum(r.trainerCapacityWeek, 2);
+        getEl('csmCapacityWeek').textContent = fmtNum(r.csmCapacityWeek, 2);
+        getEl('trainerFullThreshold').textContent = fmtNum(r.trainerThreshold);
+        getEl('csmFullThreshold').textContent = fmtNum(r.csmThresholdAvg);
+
+        const rows = [
+          ['Formateur', `${fmtNum(r.trainerCapacityWeek, 2)} h`, `${fmtNum(r.trainingWeeklyLoadPerLearner, 2)} h`, fmtNum(r.trainerThreshold)],
+          ['CSM (moyenne)', `${fmtNum(r.csmCapacityWeek, 2)} h`, `${fmtNum(r.csmWeeklyAveragePerLearner, 3)} h`, fmtNum(r.csmThresholdAvg)],
+          ['CSM (pic de vague)', `${fmtNum(r.csmCapacityWeek, 2)} h`, `${fmtNum(v.csmKickoffHours, 2)} h`, fmtNum(r.csmThresholdPeakWave)]
+        ];
+
+        getEl('thresholdTableBody').innerHTML = rows.map(row => `
+          <tr>
+            <td>${row[0]}</td>
+            <td>${row[1]}</td>
+            <td>${row[2]}</td>
+            <td>${row[3]}</td>
+          </tr>
+        `).join('');
+      }
+
+      function renderVolumeTable(v, r) {
+        const points = [];
+        if (1 < v.stepLearners) points.push(1);
+        for (let n = v.stepLearners; n <= v.maxLearners; n += v.stepLearners) points.push(n);
+        if (!points.includes(v.maxLearners)) points.push(v.maxLearners);
+        const uniq = [...new Set(points)].sort((a, b) => a - b);
+
+        getEl('volumeTableBody').innerHTML = uniq.map(n => {
+          const waves = Math.ceil(n / v.waveSize);
+          const trainingHours = n * v.programHours;
+          const csmHours = n * r.csmTotalHoursPerLearner;
+          const weeklyTrainingLoad = n * r.trainingWeeklyLoadPerLearner;
+          const weeklyCsmLoad = n * r.csmWeeklyAveragePerLearner;
+          const firstWaveLearners = Math.min(n, v.waveSize);
+          const peakCsmWeek = firstWaveLearners * v.csmKickoffHours;
+          const revenueTotal = r.revenuePerLearner * n;
+          const costTotal = r.costPerLearner * n;
+          const marginTotal = r.marginPerLearner * n;
+
+          const trainersNeeded = r.trainerCapacityWeek > 0 ? weeklyTrainingLoad / r.trainerCapacityWeek : 0;
+          const csmsNeededAvg = r.csmCapacityWeek > 0 ? weeklyCsmLoad / r.csmCapacityWeek : 0;
+          const csmsNeededPeak = r.csmCapacityWeek > 0 ? peakCsmWeek / r.csmCapacityWeek : 0;
+
+          const trainerCls = trainersNeeded > Math.floor(trainersNeeded) ? 'warn' : 'good';
+          const csmAvgCls = csmsNeededAvg > Math.floor(csmsNeededAvg) ? 'warn' : 'good';
+          const csmPeakCls = csmsNeededPeak > Math.floor(csmsNeededPeak) ? 'warn' : 'good';
+          const marginCls = marginTotal >= 0 ? 'good' : 'bad';
+
+          return `
+            <tr>
+              <td>${fmtNum(n)}</td>
+              <td>${fmtNum(waves)}</td>
+              <td>${fmtNum(trainingHours)}</td>
+              <td>${fmtNum(csmHours, 1)}</td>
+              <td>${fmtNum(weeklyTrainingLoad, 2)} h</td>
+              <td>${fmtNum(weeklyCsmLoad, 2)} h</td>
+              <td>${fmtNum(peakCsmWeek, 2)} h</td>
+              <td>${fmtNum(revenueTotal, 2)} €</td>
+              <td>${fmtNum(costTotal, 2)} €</td>
+              <td class="${marginCls}">${fmtNum(marginTotal, 2)} €</td>
+              <td class="${marginCls}">${fmtNum(r.marginRate * 100, 1)}%</td>
+              <td class="${trainerCls}">${fmtNum(ceil2(trainersNeeded), 2)} <span class="small">(${Math.ceil(trainersNeeded)} à mobiliser)</span></td>
+              <td class="${csmAvgCls}">${fmtNum(ceil2(csmsNeededAvg), 2)} <span class="small">(${Math.ceil(csmsNeededAvg)} à mobiliser)</span></td>
+              <td class="${csmPeakCls}">${fmtNum(ceil2(csmsNeededPeak), 2)} <span class="small">(${Math.ceil(csmsNeededPeak)} à mobiliser)</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function renderAnalysis(v, r) {
+        const maxWaves = Math.ceil(v.maxLearners / v.waveSize);
+        const maxTrainingHours = v.maxLearners * v.programHours;
+        const maxCsmHours = v.maxLearners * r.csmTotalHoursPerLearner;
+        const maxWeeklyTrainingLoad = v.maxLearners * r.trainingWeeklyLoadPerLearner;
+        const maxWeeklyCsmLoad = v.maxLearners * r.csmWeeklyAveragePerLearner;
+        const trainersAtMax = r.trainerCapacityWeek > 0 ? Math.ceil(maxWeeklyTrainingLoad / r.trainerCapacityWeek) : 0;
+        const csmsAtAvg = r.csmCapacityWeek > 0 ? Math.ceil(maxWeeklyCsmLoad / r.csmCapacityWeek) : 0;
+        const csmsAtPeak = r.csmCapacityWeek > 0 ? Math.ceil((v.waveSize * v.csmKickoffHours) / r.csmCapacityWeek) : 0;
+        const maxRevenue = r.revenuePerLearner * v.maxLearners;
+        const maxCost = r.costPerLearner * v.maxLearners;
+        const maxMargin = r.marginPerLearner * v.maxLearners;
+
+        getEl('analysisBox').innerHTML = `
+          <p>Le modèle fonctionne avec des <strong>vagues de lancement de ${fmtNum(v.waveSize)} apprenants</strong>. Cela ne change pas la charge formateur moyenne, mais cela change fortement le <strong>pic CSM de démarrage</strong>.</p>
+          <p>Avec <strong>${fmtNum(v.programHours, 1)} h</strong> étalées sur <strong>${fmtNum(v.spreadWeeks)}</strong> semaines, un apprenant consomme en moyenne <strong>${fmtNum(r.trainingWeeklyLoadPerLearner, 2)} h de formation par semaine</strong>. Un formateur disposant de <strong>${fmtNum(r.trainerCapacityWeek, 2)} h utiles / semaine</strong> couvre donc environ <strong>${fmtNum(r.trainerThreshold)}</strong> apprenants simultanés.</p>
+          <p>Côté CSM, un apprenant consomme <strong>${fmtNum(r.csmTotalHoursPerLearner, 2)} h au total</strong>, soit <strong>${fmtNum(r.csmWeeklyAveragePerLearner, 3)} h par semaine en moyenne</strong>. Sur cette base moyenne, un CSM couvre environ <strong>${fmtNum(r.csmThresholdAvg)}</strong> apprenants. En revanche, une vague de ${fmtNum(v.waveSize)} apprenants crée à elle seule un pic de <strong>${fmtNum(r.csmPeakWaveHours, 2)} h</strong> en semaine 1.</p>
+          <p>Économiquement, un apprenant représente environ <strong>${fmtNum(r.revenuePerLearner, 2)} € de CA</strong>, <strong>${fmtNum(r.costPerLearner, 2)} € de coûts</strong> et <strong>${fmtNum(r.marginPerLearner, 2)} € de marge</strong>, soit <strong>${fmtNum(r.marginRate * 100, 1)}%</strong>. Une vague complète de ${fmtNum(v.waveSize)} apprenants représente donc environ <strong>${fmtNum(r.marginPerWave, 2)} € de marge</strong>.</p>
+          <p>Au volume haut de <strong>${fmtNum(v.maxLearners)}</strong> apprenants, tu représentes <strong>${fmtNum(maxWaves)}</strong> vagues, <strong>${fmtNum(maxTrainingHours)}</strong> heures de formation et <strong>${fmtNum(maxCsmHours, 1)}</strong> heures CSM au total. En moyenne, cela correspond à <strong>${fmtNum(maxWeeklyTrainingLoad, 2)} h de formation / semaine</strong> et <strong>${fmtNum(maxWeeklyCsmLoad, 2)} h CSM / semaine</strong>, soit environ <strong>${fmtNum(trainersAtMax)}</strong> formateurs et <strong>${fmtNum(csmsAtAvg)}</strong> CSM. Mais pour les semaines de lancement, il faut regarder le pic : compte environ <strong>${fmtNum(csmsAtPeak)}</strong> CSM mobilisés si les ${fmtNum(v.waveSize)} démarrent ensemble.</p>
+          <p>Sur ce même volume haut, la projection économique ressort à environ <strong>${fmtNum(maxRevenue, 2)} € de chiffre d'affaires</strong>, <strong>${fmtNum(maxCost, 2)} € de coûts totaux</strong> et <strong>${fmtNum(maxMargin, 2)} € de marge</strong>.</p>
+          <p class="small">Point clé : tu peux désormais lire à la fois la soutenabilité opérationnelle et l'effet économique du volume. Si tu modifies le prix, le coût formateur, le coût CSM ou les commissions, la marge unitaire et la marge totale bougeront immédiatement.</p>
+        `;
+      }
+
+      function render() {
+        const v = getValues();
+        const r = compute(v);
+        renderEconomics(r);
+        renderThresholds(v, r);
+        renderVolumeTable(v, r);
+        renderAnalysis(v, r);
+      }
+
+      if (!runSelfCheck()) return;
+
+      inputIds.forEach(id => {
+        const el = getEl(id);
+        if (el) {
+          el.addEventListener('input', render);
+          el.addEventListener('change', render);
+        }
+      });
+
+      render();
+    });
+  </script>
+</body>
+</html>
